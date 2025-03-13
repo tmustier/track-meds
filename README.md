@@ -2,8 +2,6 @@
 
 A simple iOS application to track daily medication intake with reminders and logs.
 
-![Medication Tracker App](app_screenshot.png)
-
 ## Features
 
 - **Simple Medication Tracking**: Log medications with a single tap
