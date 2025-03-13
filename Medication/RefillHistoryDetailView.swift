@@ -29,7 +29,7 @@ public struct RefillHistoryDetailView: View {
         return formatter
     }()
     
-    var body: some View {
+    public var body: some View {
         List {
             ForEach(groupedEvents.keys.sorted(by: >), id: \.self) { month in
                 Section(header: Text(monthFormatter.string(from: month))) {

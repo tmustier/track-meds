@@ -7,10 +7,15 @@
 
 import SwiftUI
 
-struct InventoryView: View {
+public struct InventoryView: View {
     // Model state
-    @ObservedObject var inventory: InventoryModel
-    @ObservedObject var settings: SettingsModel
+    @ObservedObject public var inventory: InventoryModel
+    @ObservedObject public var settings: SettingsModel
+    
+    public init(inventory: InventoryModel, settings: SettingsModel) {
+        self.inventory = inventory
+        self.settings = settings
+    }
     
     // Local view state
     @State private var showingRefillConfirmation = false
@@ -62,7 +67,7 @@ struct InventoryView: View {
         }
     }
     
-    var body: some View {
+    public var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -269,16 +274,22 @@ struct InventoryView: View {
 }
 
 // View for logging a received refill
-struct RefillReceivedView: View {
-    @ObservedObject var inventory: InventoryModel
-    @ObservedObject var settings: SettingsModel
-    @Binding var isPresented: Bool
+public struct RefillReceivedView: View {
+    @ObservedObject public var inventory: InventoryModel
+    @ObservedObject public var settings: SettingsModel
+    @Binding public var isPresented: Bool
+    
+    public init(inventory: InventoryModel, settings: SettingsModel, isPresented: Binding<Bool>) {
+        self.inventory = inventory
+        self.settings = settings
+        self._isPresented = isPresented
+    }
     
     @State private var newPillCount = ""
     @State private var pillCountError = false
     @State private var errorMessage = ""
     
-    var body: some View {
+    public var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Refill Information")) {
@@ -358,7 +369,7 @@ public struct RefillHistoryView: View {
         return formatter
     }()
     
-    var body: some View {
+    public var body: some View {
         List {
             ForEach(refillEvents.sorted(by: { $0.timestamp > $1.timestamp })) { event in
                 HStack(alignment: .top) {
