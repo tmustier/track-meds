@@ -34,9 +34,9 @@ public struct SimpleInventoryView: View {
                 }
                 
                 HStack {
-                    Text("Daily usage rate:")
+                    Text("Daily Target:")
                     Spacer()
-                    Text(String(format: "%.1f", inventory.dailyUsageRate))
+                    Text("\(settings.dailyPillTarget)")
                 }
                 
                 HStack {

@@ -73,7 +73,7 @@ public class RefillReminderManager {
     // Log a refill received and reset reminders
     public func handleRefillReceived(pillCount: Int) {
         // Log the refill
-        inventory.logRefillReceived(pillCount: pillCount)
+        inventory.logRefillReceived(pillCount: pillCount, settings: settings)
         
         // Remove all pending refill notifications
         removeAllRefillNotifications()

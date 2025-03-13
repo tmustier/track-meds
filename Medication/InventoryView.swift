@@ -94,9 +94,9 @@ public struct InventoryView: View {
                             
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack {
-                                    Text("Daily usage rate:")
+                                    Text("Daily Target:")
                                     Spacer()
-                                    Text(String(format: "%.1f", inventory.dailyUsageRate))
+                                    Text("\(settings.dailyPillTarget)")
                                         .fontWeight(.medium)
                                     Text("pills/day")
                                         .fontWeight(.medium)

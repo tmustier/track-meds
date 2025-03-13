@@ -143,9 +143,10 @@ public class InventoryModel: ObservableObject {
         // Load usage rate
         inventory.dailyUsageRate = UserDefaults.standard.double(forKey: "inventoryDailyUsageRate")
         
-        // If no usage rate is set, default to a reasonable value (1.0 pills per day)
+        // If no usage rate is set, default to the daily target
+        let settings = SettingsModel()
         if inventory.dailyUsageRate == 0 {
-            inventory.dailyUsageRate = 1.0
+            inventory.dailyUsageRate = Double(settings.dailyPillTarget)
             inventory.save()
         }
         
@@ -166,7 +167,7 @@ public class InventoryModel: ObservableObject {
     }
     
     // Log a refill received
-    public func logRefillReceived(pillCount: Int) {
+    public func logRefillReceived(pillCount: Int, settings: SettingsModel) {
         let newEvent = RefillEvent(
             timestamp: Date(),
             eventType: .received,
@@ -178,8 +179,8 @@ public class InventoryModel: ObservableObject {
         // Update the pill count
         self.currentPillCount = pillCount
         
-        // Recalculate the daily usage rate based on historical data
-        updateDailyUsageRate()
+        // Update the daily usage rate based on settings
+        updateDailyUsageRate(settings: settings)
         
         save()
     }
@@ -192,15 +193,10 @@ public class InventoryModel: ObservableObject {
         }
     }
     
-    // Calculate daily usage rate based on medication logs
-    private func updateDailyUsageRate() {
-        // This is a simplified implementation
-        // In a real app, you would analyze medication logs over time to calculate usage rate
-        
-        // Here we'll just use a hardcoded value of 1.0 if none is set
-        if dailyUsageRate <= 0 {
-            dailyUsageRate = 1.0
-        }
+    // Calculate daily usage rate based on settings
+    public func updateDailyUsageRate(settings: SettingsModel) {
+        // Use the daily target from settings
+        dailyUsageRate = Double(settings.dailyPillTarget)
         
         save()
     }
