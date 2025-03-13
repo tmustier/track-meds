@@ -54,6 +54,37 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section(header: Text("Refill Reminders")) {
+                    Toggle("Enable Refill Reminders", isOn: $settings.refillRemindersEnabled)
+                        .onChange(of: settings.refillRemindersEnabled) {
+                            settings.saveRefillReminderSettings()
+                        }
+                    
+                    if settings.refillRemindersEnabled {
+                        Stepper(value: $settings.inventoryReminderThreshold, in: 1...30, onEditingChanged: { editing in
+                            if !editing {
+                                settings.saveRefillReminderSettings()
+                            }
+                        }) {
+                            Text("Remind when \(settings.inventoryReminderThreshold) day\(settings.inventoryReminderThreshold > 1 ? "s" : "") of pills remain")
+                        }
+                        
+                        Stepper(value: $settings.timeReminderThreshold, in: 14...90, onEditingChanged: { editing in
+                            if !editing {
+                                settings.saveRefillReminderSettings()
+                            }
+                        }) {
+                            Text("Remind after \(settings.timeReminderThreshold) day\(settings.timeReminderThreshold > 1 ? "s" : "") since last refill")
+                        }
+                        
+                        HStack {
+                            Text("Refill reminders will appear when either condition is met.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                
                 Section(header: Text("Support")) {
                     Button("Reset All Settings") {
                         // Reset to defaults
@@ -65,10 +96,16 @@ struct SettingsView: View {
                         settings.notificationDelay = 2
                         settings.dailyPillTarget = 4
                         
+                        // Refill reminder defaults
+                        settings.refillRemindersEnabled = true
+                        settings.inventoryReminderThreshold = 7
+                        settings.timeReminderThreshold = 30
+                        
                         // Save the reset values
                         settings.saveMorningTime()
                         settings.saveNotificationDelay()
                         settings.saveDailyPillTarget()
+                        settings.saveRefillReminderSettings()
                     }
                     .foregroundColor(.red)
                 }

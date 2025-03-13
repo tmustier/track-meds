@@ -12,12 +12,14 @@ import Combine
 
 struct ContentView: View {
     @StateObject private var settings = SettingsModel()
+    @StateObject private var inventory = InventoryModel.load()
     
     @State private var medicationLogs: [MedicationLog] = []
     @State private var todayCount: Int = 0
     @State private var showingDatePicker = false
     @State private var showingSettings = false
     @State private var showingHistory = false
+    @State private var showingInventory = false
     @State private var selectedDate = Date()
     @State private var notificationsEnabled = false
     @State private var nextPillTime: Date? = nil
@@ -98,6 +100,9 @@ struct ContentView: View {
         saveMedicationLogs()
         updateNextPillTime()
         
+        // Update inventory pill count
+        inventory.logMedicationTaken()
+        
         if notificationsEnabled {
             scheduleNotifications()
         }
@@ -110,6 +115,11 @@ struct ContentView: View {
         saveMedicationLogs()
         updateNextPillTime()
         showingDatePicker = false
+        
+        // Only update inventory for today's medications
+        if Calendar.current.isDateInToday(date) {
+            inventory.logMedicationTaken()
+        }
         
         if notificationsEnabled {
             scheduleNotifications()
@@ -146,8 +156,18 @@ struct ContentView: View {
             return
         }
         
+        // Check if log is from today (only adjust inventory for today's logs)
+        let isFromToday = Calendar.current.isDateInToday(medicationLogs[0].timestamp)
+        
         // Remove the most recent medication log
         medicationLogs.removeFirst() // removeFirst because they're sorted newest first
+        
+        // If we're undoing a log from today, adjust the inventory
+        if isFromToday && inventory.currentPillCount < 999 {
+            // Increment pill count (with a reasonable max)
+            inventory.currentPillCount += 1
+            inventory.save()
+        }
         
         updateTodayCount()
         saveMedicationLogs()
@@ -470,13 +490,22 @@ struct ContentView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
+                    // Left toolbar items
+                    ToolbarItemGroup(placement: .navigationBarLeading) {
                         Button(action: {
                             showingHistory = true
                         }) {
                             Image(systemName: "calendar")
                                 .foregroundColor(.blue)
                         }
+                        
+                        Button(action: {
+                            showingInventory = true
+                        }) {
+                            Image(systemName: "pills.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.leading, 10)
                     }
                     
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -512,7 +541,8 @@ struct ContentView: View {
                     NavigationView {
                         HistoryView(
                             medicationLogs: medicationLogs, 
-                            dailyTarget: settings.dailyPillTarget
+                            dailyTarget: settings.dailyPillTarget,
+                            refillEvents: inventory.refillEvents
                         )
                         .toolbar {
                             ToolbarItem(placement: .navigationBarTrailing) {
@@ -562,6 +592,12 @@ struct ContentView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("You can only undo medication logs that were created within the last 5 minutes.")
+            }
+            // Display the inventory view
+            .sheet(isPresented: $showingInventory) {
+                NavigationView {
+                    SimpleInventoryView(inventory: inventory, settings: settings)
+                }
             }
             
             // Date picker for adding past medication
