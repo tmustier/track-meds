@@ -8,16 +8,21 @@
 import SwiftUI
 
 /// A simplified inventory view for testing the refill functionality
-struct SimpleInventoryView: View {
-    @ObservedObject var inventory: InventoryModel
-    @ObservedObject var settings: SettingsModel
+public struct SimpleInventoryView: View {
+    @ObservedObject public var inventory: InventoryModel
+    @ObservedObject public var settings: SettingsModel
+    
+    public init(inventory: InventoryModel, settings: SettingsModel) {
+        self.inventory = inventory
+        self.settings = settings
+    }
     
     // State for the refill sheet
     @State private var showingNewRefillSheet = false
     @State private var newPillCount = ""
     @State private var errorMessage = ""
     
-    var body: some View {
+    public var body: some View {
         Form {
             // Current inventory section
             Section(header: Text("Current Inventory")) {
