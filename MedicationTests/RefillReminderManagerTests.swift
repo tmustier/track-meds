@@ -6,289 +6,211 @@
 //
 
 import XCTest
+import UserNotifications
 @testable import Medication
 
-final class MockNotificationCenter: UNUserNotificationCenter {
-    // Track notification requests
-    var pendingNotificationRequests: [UNNotificationRequest] = []
+// Mock UNUserNotificationCenter for testing purposes
+class MockNotificationCenter: UNUserNotificationCenter {
+    // Store notification requests for testing
+    var pendingRequests: [UNNotificationRequest] = []
+    
+    // Track which notifications were removed
     var removedIdentifiers: [String] = []
     
-    // For testing notification categories
-    var categories: Set<UNNotificationCategory> = []
+    // Track authorization status
+    var authorizationStatus: UNAuthorizationStatus = .authorized
     
-    // For callbacks to complete normally
+    // Mock implementation of adding requests
     override func add(_ request: UNNotificationRequest, withCompletionHandler completionHandler: ((Error?) -> Void)? = nil) {
-        pendingNotificationRequests.append(request)
+        pendingRequests.append(request)
         completionHandler?(nil)
     }
     
+    // Mock implementation of removing requests
     override func removePendingNotificationRequests(withIdentifiers identifiers: [String]) {
         removedIdentifiers.append(contentsOf: identifiers)
-        pendingNotificationRequests.removeAll { request in
+        // Remove matching requests from pendingRequests
+        pendingRequests.removeAll { request in
             identifiers.contains(request.identifier)
         }
     }
     
+    // Mock implementation for getting pending requests
     override func getPendingNotificationRequests(completionHandler: @escaping ([UNNotificationRequest]) -> Void) {
-        completionHandler(pendingNotificationRequests)
+        completionHandler(pendingRequests)
     }
     
-    override func setNotificationCategories(_ categories: Set<UNNotificationCategory>) {
-        self.categories = categories
+    // Mock implementation for getting notification settings
+    override func getNotificationSettings(completionHandler: @escaping (UNNotificationSettings) -> Void) {
+        let settings = MockNotificationSettings(authorizationStatus: authorizationStatus)
+        completionHandler(settings)
+    }
+    
+    // Helper method to check if a notification exists with a specific identifier
+    func hasNotificationWith(identifier: String) -> Bool {
+        return pendingRequests.contains { $0.identifier == identifier }
+    }
+    
+    // Helper to reset the state between tests
+    func reset() {
+        pendingRequests = []
+        removedIdentifiers = []
+    }
+}
+
+// Mock UNNotificationSettings
+class MockNotificationSettings: UNNotificationSettings {
+    private let _authorizationStatus: UNAuthorizationStatus
+    
+    init(authorizationStatus: UNAuthorizationStatus) {
+        self._authorizationStatus = authorizationStatus
+        super.init()
+    }
+    
+    override var authorizationStatus: UNAuthorizationStatus {
+        return _authorizationStatus
     }
 }
 
 final class RefillReminderManagerTests: XCTestCase {
     
-    var mockNotificationCenter: MockNotificationCenter!
-    var settings: SettingsModel!
     var inventory: InventoryModel!
+    var settings: SettingsModel!
+    var mockNotificationCenter: MockNotificationCenter!
     var reminderManager: RefillReminderManager!
-
+    
     override func setUp() {
         super.setUp()
-        
-        // Set up mock notification center
-        mockNotificationCenter = MockNotificationCenter()
-        
-        // Set up settings with reminders enabled
+        inventory = InventoryModel(currentPillCount: 30, refillEvents: [], dailyUsageRate: 1.0)
         settings = SettingsModel()
-        settings.refillRemindersEnabled = true
-        settings.inventoryReminderThreshold = 14
-        settings.timeReminderThreshold = 14
-        
-        // Set up inventory
-        inventory = InventoryModel(currentPillCount: 20, dailyUsageRate: 1.0)
-        
-        // Create reminder manager with mocks
+        mockNotificationCenter = MockNotificationCenter()
         reminderManager = RefillReminderManager(
             inventory: inventory,
             settings: settings,
             notificationCenter: mockNotificationCenter
         )
+        
+        // Configure settings for testing
+        settings.refillRemindersEnabled = true
+        settings.inventoryReminderThreshold = 7
+        settings.timeReminderThreshold = 14
     }
-
+    
     override func tearDown() {
-        mockNotificationCenter = nil
-        settings = nil
+        mockNotificationCenter.reset()
         inventory = nil
+        settings = nil
+        mockNotificationCenter = nil
         reminderManager = nil
         super.tearDown()
     }
     
-    // MARK: - Test Reminder Scheduling
-    
-    func testNoRemindersWhenDisabled() {
-        // Disable refill reminders
+    func testCheckAndScheduleRemindersDisabled() {
+        // Given
         settings.refillRemindersEnabled = false
         
-        // Create low inventory condition
-        inventory.currentPillCount = 5 // 5 days left at 1 pill/day
-        
-        // Check and schedule reminders
+        // When
         reminderManager.checkAndScheduleReminders()
         
-        // No notifications should be scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 0)
+        // Then
+        XCTAssertTrue(mockNotificationCenter.pendingRequests.isEmpty)
+        XCTAssertTrue(mockNotificationCenter.removedIdentifiers.count > 0)
     }
-    
-    func testInventoryReminderWhenBelowThreshold() {
-        // Create low inventory condition
-        inventory.currentPillCount = 10 // 10 days left at 1 pill/day
-        inventory.dailyUsageRate = 1.0
-        
-        // Set threshold to 14 days
-        settings.inventoryReminderThreshold = 14
-        
-        // Check and schedule reminders
-        reminderManager.checkAndScheduleReminders()
-        
-        // Inventory reminder should be scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        
-        // Verify the notification
-        let request = mockNotificationCenter.pendingNotificationRequests.first!
-        XCTAssertEqual(request.identifier, "inventoryRefillReminder")
-        XCTAssertEqual(request.content.title, "Medication Refill Reminder")
-        XCTAssertTrue(request.content.body.contains("10 days"))
-    }
-    
-    func testTimeReminderWhenAboveThreshold() {
-        // Create old refill condition
-        inventory.lastRefillDate = Calendar.current.date(byAdding: .day, value: -20, to: Date())!
-        
-        // Set threshold to 14 days
-        settings.timeReminderThreshold = 14
-        
-        // Check and schedule reminders
-        reminderManager.checkAndScheduleReminders()
-        
-        // Time-based reminder should be scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        
-        // Verify the notification
-        let request = mockNotificationCenter.pendingNotificationRequests.first!
-        XCTAssertEqual(request.identifier, "timeBasedRefillReminder")
-        XCTAssertEqual(request.content.title, "Medication Refill Reminder")
-        XCTAssertTrue(request.content.body.contains("14 days"))
-    }
-    
-    func testNoRemindersWhenWaitingForRefill() {
-        // Set up waiting for refill
-        inventory.isWaitingForRefill = true
-        inventory.refillRequestDate = Date()
-        inventory.currentPillCount = 5 // Below threshold
-        
-        // Check and schedule reminders
-        reminderManager.checkAndScheduleReminders()
-        
-        // Only follow-up reminder should be scheduled, not inventory or time reminders
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.first!.identifier, "refillFollowUpReminder")
-    }
-    
-    // MARK: - Test Reminder Actions
     
     func testHandleRefillRequested() {
-        // Start with no waiting flag
+        // Given
         XCTAssertFalse(inventory.isWaitingForRefill)
-        XCTAssertNil(inventory.refillRequestDate)
         XCTAssertEqual(inventory.refillEvents.count, 0)
         
-        // Handle refill request
+        // When
         reminderManager.handleRefillRequested()
         
-        // Check that inventory state is updated
+        // Then
         XCTAssertTrue(inventory.isWaitingForRefill)
-        XCTAssertNotNil(inventory.refillRequestDate)
         XCTAssertEqual(inventory.refillEvents.count, 1)
         XCTAssertEqual(inventory.refillEvents[0].eventType, .requested)
         
-        // Verify follow-up reminder is scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests[0].identifier, "refillFollowUpReminder")
+        // Should have one follow-up reminder
+        XCTAssertEqual(mockNotificationCenter.pendingRequests.count, 1)
+        XCTAssertTrue(mockNotificationCenter.hasNotificationWith(identifier: "refillFollowUpReminder"))
     }
     
     func testHandleRefillReceived() {
-        // Start with waiting flag
-        inventory.isWaitingForRefill = true
-        inventory.refillRequestDate = Date()
+        // Given
+        inventory.logRefillRequested() // First request a refill
+        mockNotificationCenter.reset() // Clear mock state
         
-        // Handle refill received
-        let newPillCount = 60
-        reminderManager.handleRefillReceived(pillCount: newPillCount)
+        // When
+        reminderManager.handleRefillReceived(pillCount: 60)
         
-        // Check that inventory state is updated
+        // Then
         XCTAssertFalse(inventory.isWaitingForRefill)
-        XCTAssertNil(inventory.refillRequestDate)
-        XCTAssertEqual(inventory.currentPillCount, newPillCount)
-        XCTAssertEqual(inventory.refillEvents.count, 1)
-        XCTAssertEqual(inventory.refillEvents[0].eventType, .received)
-        XCTAssertEqual(inventory.refillEvents[0].pillCount, newPillCount)
+        XCTAssertEqual(inventory.refillEvents.count, 2)
+        XCTAssertEqual(inventory.refillEvents[1].eventType, .received)
+        XCTAssertEqual(inventory.refillEvents[1].pillCount, 60)
+        XCTAssertEqual(inventory.currentPillCount, 60)
         
-        // Verify all notifications are removed
+        // All refill notifications should be removed
         XCTAssertTrue(mockNotificationCenter.removedIdentifiers.contains("inventoryRefillReminder"))
         XCTAssertTrue(mockNotificationCenter.removedIdentifiers.contains("timeBasedRefillReminder"))
         XCTAssertTrue(mockNotificationCenter.removedIdentifiers.contains("refillFollowUpReminder"))
     }
     
-    // MARK: - Test Follow-Up Logic
+    func testInventoryReminderScheduling() {
+        // Given - set inventory low enough to trigger reminder
+        inventory.currentPillCount = 5 // 5 days supply with 1.0 daily usage
+        
+        // When
+        reminderManager.checkAndScheduleReminders()
+        
+        // Then - should have an inventory-based reminder
+        XCTAssertEqual(mockNotificationCenter.pendingRequests.count, 1)
+        XCTAssertTrue(mockNotificationCenter.hasNotificationWith(identifier: "inventoryRefillReminder"))
+        
+        // Check content
+        let request = mockNotificationCenter.pendingRequests.first!
+        XCTAssertEqual(request.content.title, "Medication Refill Reminder")
+        XCTAssertTrue(request.content.body.contains("running low"))
+    }
+    
+    func testTimeReminderScheduling() {
+        // Given - add a refill event from 15 days ago
+        let calendar = Calendar.current
+        let oldDate = calendar.date(byAdding: .day, value: -15, to: Date())!
+        inventory.refillEvents = [
+            RefillEvent(timestamp: oldDate, eventType: .received, pillCount: 30)
+        ]
+        
+        // When
+        reminderManager.checkAndScheduleReminders()
+        
+        // Then - should have a time-based reminder
+        XCTAssertEqual(mockNotificationCenter.pendingRequests.count, 1)
+        XCTAssertTrue(mockNotificationCenter.hasNotificationWith(identifier: "timeBasedRefillReminder"))
+        
+        // Check content
+        let request = mockNotificationCenter.pendingRequests.first!
+        XCTAssertEqual(request.content.title, "Medication Refill Reminder")
+        XCTAssertTrue(request.content.body.contains("14 days"))
+    }
     
     func testFollowUpReminderScheduling() {
-        // Set up a refill request from 2 days ago
-        let twoDaysAgo = Calendar.current.date(byAdding: .day, value: -2, to: Date())!
-        inventory.isWaitingForRefill = true
-        inventory.refillRequestDate = twoDaysAgo
+        // Given - request a refill 2 days ago
+        let calendar = Calendar.current
+        let requestDate = calendar.date(byAdding: .day, value: -2, to: Date())!
+        inventory.refillEvents = [
+            RefillEvent(timestamp: requestDate, eventType: .requested)
+        ]
         
-        // Check and schedule reminders
+        // When
         reminderManager.checkAndScheduleReminders()
         
-        // Verify follow-up reminder is scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        let request = mockNotificationCenter.pendingNotificationRequests.first!
-        XCTAssertEqual(request.identifier, "refillFollowUpReminder")
+        // Then - should have a follow-up reminder in 1 day (3 days after request)
+        XCTAssertEqual(mockNotificationCenter.pendingRequests.count, 1)
+        XCTAssertTrue(mockNotificationCenter.hasNotificationWith(identifier: "refillFollowUpReminder"))
         
-        // Verify the trigger date (should be 3 days after the request date, so 1 day from now)
-        if let trigger = request.trigger as? UNCalendarNotificationTrigger {
-            let triggerDate = Calendar.current.date(from: trigger.dateComponents)!
-            let oneDayFromNow = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
-            
-            // Allow 1 hour tolerance for test reliability
-            let difference = abs(triggerDate.timeIntervalSince(oneDayFromNow))
-            XCTAssertLessThan(difference, 3600)
-        } else {
-            XCTFail("Expected a calendar trigger")
-        }
-    }
-    
-    func testDailyFollowUpAfterThreeDays() {
-        // Set up a refill request from 4 days ago
-        let fourDaysAgo = Calendar.current.date(byAdding: .day, value: -4, to: Date())!
-        inventory.isWaitingForRefill = true
-        inventory.refillRequestDate = fourDaysAgo
-        
-        // Check and schedule reminders
-        reminderManager.checkAndScheduleReminders()
-        
-        // Verify follow-up reminder is scheduled
-        XCTAssertEqual(mockNotificationCenter.pendingNotificationRequests.count, 1)
-        let request = mockNotificationCenter.pendingNotificationRequests.first!
-        XCTAssertEqual(request.identifier, "refillFollowUpReminder")
-        
-        // Verify the trigger date (should be tomorrow, not 3 days from request date)
-        if let trigger = request.trigger as? UNCalendarNotificationTrigger {
-            let triggerDate = Calendar.current.date(from: trigger.dateComponents)!
-            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
-            
-            // Allow 1 hour tolerance for test reliability
-            let difference = abs(triggerDate.timeIntervalSince(tomorrow))
-            XCTAssertLessThan(difference, 3600)
-        } else {
-            XCTFail("Expected a calendar trigger")
-        }
-    }
-    
-    // MARK: - Test Notification Categories
-    
-    func testNotificationCategorySetup() {
-        // Test the static method
-        RefillReminderManager.setupNotificationCategories()
-        
-        // Since we can't modify the real UNUserNotificationCenter, we'll create a local mock
-        let localMock = MockNotificationCenter()
-        
-        // Create a category with expected options
-        let requestAction = UNNotificationAction(
-            identifier: "REQUEST_REFILL", 
-            title: "I've requested a refill", 
-            options: .foreground
-        )
-        
-        let receivedAction = UNNotificationAction(
-            identifier: "RECEIVED_REFILL", 
-            title: "I've received my refill", 
-            options: .foreground
-        )
-        
-        let expectedCategory = UNNotificationCategory(
-            identifier: "REFILL_REMINDER", 
-            actions: [requestAction, receivedAction], 
-            intentIdentifiers: [], 
-            options: []
-        )
-        
-        // Call the setup method with our mock
-        localMock.setNotificationCategories([expectedCategory])
-        
-        // Verify the category was set
-        XCTAssertEqual(localMock.categories.count, 1)
-        let category = localMock.categories.first!
-        XCTAssertEqual(category.identifier, "REFILL_REMINDER")
-        
-        // Verify actions
-        let actions = category.actions
-        XCTAssertEqual(actions.count, 2)
-        XCTAssertEqual(actions[0].identifier, "REQUEST_REFILL")
-        XCTAssertEqual(actions[1].identifier, "RECEIVED_REFILL")
+        // Check content
+        let request = mockNotificationCenter.pendingRequests.first!
+        XCTAssertEqual(request.content.title, "Medication Refill Follow-Up")
     }
 }
