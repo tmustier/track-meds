@@ -149,6 +149,7 @@ final class RefillReminderManagerTests: XCTestCase {
         XCTAssertEqual(inventory.refillEvents[1].eventType, .received)
         XCTAssertEqual(inventory.refillEvents[1].pillCount, 60)
         XCTAssertEqual(inventory.currentPillCount, 60)
+        XCTAssertEqual(inventory.dailyUsageRate, Double(settings.dailyPillTarget))
         
         // All refill notifications should be removed
         XCTAssertTrue(mockNotificationCenter.removedIdentifiers.contains("inventoryRefillReminder"))

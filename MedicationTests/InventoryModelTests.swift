@@ -51,13 +51,14 @@ final class InventoryModelTests: XCTestCase {
         XCTAssertEqual(inventory.currentPillCount, 30)
         
         // When
-        inventory.logRefillReceived(pillCount: 60)
+        inventory.logRefillReceived(pillCount: 60, settings: settings)
         
         // Then
         XCTAssertEqual(inventory.refillEvents.count, 1)
         XCTAssertEqual(inventory.currentPillCount, 60)
         XCTAssertEqual(inventory.refillEvents[0].eventType, .received)
         XCTAssertEqual(inventory.refillEvents[0].pillCount, 60)
+        XCTAssertEqual(inventory.dailyUsageRate, Double(settings.dailyPillTarget))
     }
     
     func testLogMedicationTaken() {
