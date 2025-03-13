@@ -19,6 +19,7 @@ struct ContentView: View {
     @State private var showingDatePicker = false
     @State private var showingSettings = false
     @State private var showingHistory = false
+    @State private var showingInventory = false
     @State private var selectedDate = Date()
     @State private var notificationsEnabled = false
     @State private var nextPillTime: Date? = nil
@@ -489,13 +490,22 @@ struct ContentView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
+                    // Left toolbar items
+                    ToolbarItemGroup(placement: .navigationBarLeading) {
                         Button(action: {
                             showingHistory = true
                         }) {
                             Image(systemName: "calendar")
                                 .foregroundColor(.blue)
                         }
+                        
+                        Button(action: {
+                            showingInventory = true
+                        }) {
+                            Image(systemName: "pills.fill")
+                                .foregroundColor(.blue)
+                        }
+                        .padding(.leading, 10)
                     }
                     
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -582,6 +592,12 @@ struct ContentView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("You can only undo medication logs that were created within the last 5 minutes.")
+            }
+            // Display the inventory view
+            .sheet(isPresented: $showingInventory) {
+                NavigationView {
+                    SimpleInventoryView(inventory: inventory, settings: settings)
+                }
             }
             
             // Date picker for adding past medication
