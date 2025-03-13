@@ -87,46 +87,6 @@ public struct HistoryView: View {
     
     public var body: some View {
         List {
-            // Refill Events Section
-            if !refillEvents.isEmpty {
-                Section(header: Text("Refill Events")) {
-                    ForEach(refillEvents.prefix(5).sorted(by: { $0.timestamp > $1.timestamp })) { event in
-                        HStack {
-                            if event.eventType == .requested {
-                                Image(systemName: "doc.text")
-                                    .foregroundColor(.blue)
-                                Text("Requested Refill")
-                                    .fontWeight(.medium)
-                                Spacer()
-                                Text(dateFormatter.string(from: event.timestamp))
-                                    .foregroundColor(.gray)
-                            } else {
-                                Image(systemName: "pills")
-                                    .foregroundColor(.green)
-                                if let count = event.pillCount {
-                                    Text("Received \(count) pills")
-                                        .fontWeight(.medium)
-                                } else {
-                                    Text("Received Refill")
-                                        .fontWeight(.medium)
-                                }
-                                Spacer()
-                                Text(dateFormatter.string(from: event.timestamp))
-                                    .foregroundColor(.gray)
-                            }
-                        }
-                    }
-                    
-                    if refillEvents.count > 5 {
-                        NavigationLink(destination: RefillHistoryDetailView(refillEvents: refillEvents)) {
-                            Text("View all \(refillEvents.count) refill events")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
-            }
-            
             // Summary section
             Section(header: Text("Summary")) {
                 HStack {
@@ -178,6 +138,87 @@ public struct HistoryView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+            
+            // Refill Events Section
+            if !refillEvents.isEmpty {
+                Section(header: Text("Refill Events")) {
+                    // Only show the most recent 2 events
+                    ForEach(refillEvents.prefix(2).sorted(by: { $0.timestamp > $1.timestamp })) { event in
+                        HStack {
+                            if event.eventType == .requested {
+                                Image(systemName: "doc.text")
+                                    .foregroundColor(.blue)
+                                Text("Requested Refill")
+                                    .fontWeight(.medium)
+                                Spacer()
+                                Text(dateFormatter.string(from: event.timestamp))
+                                    .foregroundColor(.gray)
+                            } else {
+                                Image(systemName: "pills")
+                                    .foregroundColor(.green)
+                                if let count = event.pillCount {
+                                    Text("Received \(count) pills")
+                                        .fontWeight(.medium)
+                                } else {
+                                    Text("Received Refill")
+                                        .fontWeight(.medium)
+                                }
+                                Spacer()
+                                Text(dateFormatter.string(from: event.timestamp))
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                    }
+                    
+                    // Disclosure group for additional events
+                    if refillEvents.count > 2 {
+                        DisclosureGroup("Show more refill events") {
+                            ForEach(refillEvents.dropFirst(2).prefix(3).sorted(by: { $0.timestamp > $1.timestamp })) { event in
+                                HStack {
+                                    if event.eventType == .requested {
+                                        Image(systemName: "doc.text")
+                                            .foregroundColor(.blue)
+                                        Text("Requested Refill")
+                                            .fontWeight(.medium)
+                                        Spacer()
+                                        Text(dateFormatter.string(from: event.timestamp))
+                                            .foregroundColor(.gray)
+                                    } else {
+                                        Image(systemName: "pills")
+                                            .foregroundColor(.green)
+                                        if let count = event.pillCount {
+                                            Text("Received \(count) pills")
+                                                .fontWeight(.medium)
+                                        } else {
+                                            Text("Received Refill")
+                                                .fontWeight(.medium)
+                                        }
+                                        Spacer()
+                                        Text(dateFormatter.string(from: event.timestamp))
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                .padding(.vertical, 2)
+                            }
+                            
+                            if refillEvents.count > 5 {
+                                NavigationLink(destination: RefillHistoryDetailView(refillEvents: refillEvents)) {
+                                    Text("View all \(refillEvents.count) refill events")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                        .padding(.top, 4)
+                                }
+                            }
+                        }
+                    } else if refillEvents.count > 2 {
+                        NavigationLink(destination: RefillHistoryDetailView(refillEvents: refillEvents)) {
+                            Text("View all \(refillEvents.count) refill events")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
             }
             
             // Daily data
@@ -262,14 +303,28 @@ public struct HistoryView: View {
         MedicationLog(timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date().addingTimeInterval(3600))!)
     ]
     
-    // Sample refill events
+    // Sample refill events - create more than 2 to test collapsing
     let sampleRefillEvents = [
         RefillEvent(
-            timestamp: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+            timestamp: Calendar.current.date(byAdding: .day, value: -2, to: Date())!,
+            eventType: .received,
+            pillCount: 30
+        ),
+        RefillEvent(
+            timestamp: Calendar.current.date(byAdding: .day, value: -3, to: Date())!,
             eventType: .requested
         ),
         RefillEvent(
-            timestamp: Calendar.current.date(byAdding: .day, value: -7, to: Date())!,
+            timestamp: Calendar.current.date(byAdding: .day, value: -10, to: Date())!,
+            eventType: .received,
+            pillCount: 28
+        ),
+        RefillEvent(
+            timestamp: Calendar.current.date(byAdding: .day, value: -11, to: Date())!,
+            eventType: .requested
+        ),
+        RefillEvent(
+            timestamp: Calendar.current.date(byAdding: .day, value: -30, to: Date())!,
             eventType: .received,
             pillCount: 30
         )
