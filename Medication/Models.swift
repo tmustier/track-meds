@@ -30,8 +30,8 @@ public struct MedicationLog: Identifiable, Codable, Hashable {
 
 // Enum for refill event types
 public enum RefillEventType: String, Codable {
-    case requested
-    case received
+    case requested = "Requested"
+    case received = "Received"
 }
 
 // Model for storing refill events
