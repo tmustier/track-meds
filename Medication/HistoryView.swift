@@ -6,10 +6,16 @@
 //
 
 import SwiftUI
+import Foundation
 
-struct HistoryView: View {
-    let medicationLogs: [MedicationLog]
-    let dailyTarget: Int
+public struct HistoryView: View {
+    public let medicationLogs: [MedicationLog]
+    public let dailyTarget: Int
+    
+    public init(medicationLogs: [MedicationLog], dailyTarget: Int) {
+        self.medicationLogs = medicationLogs
+        self.dailyTarget = dailyTarget
+    }
     
     // Date formatters
     private var dateFormatter: DateFormatter = {
@@ -77,7 +83,7 @@ struct HistoryView: View {
         return Double(totalPills) / Double(totalDays)
     }
     
-    var body: some View {
+    public var body: some View {
         List {
             // Summary section
             Section(header: Text("Summary")) {
@@ -214,7 +220,7 @@ struct HistoryView: View {
         MedicationLog(timestamp: Calendar.current.date(byAdding: .day, value: -1, to: Date().addingTimeInterval(3600))!)
     ]
     
-    return NavigationView {
+    NavigationView {
         HistoryView(medicationLogs: sampleLogs, dailyTarget: 4)
     }
 }

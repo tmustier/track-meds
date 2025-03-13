@@ -7,74 +7,7 @@
 
 import SwiftUI
 import UserNotifications
-
-// Settings model for app preferences
-class SettingsModel: ObservableObject {
-    @Published var morningReminderTime: Date
-    @Published var notificationDelay: Int
-    @Published var dailyPillTarget: Int
-    
-    init() {
-        // Load saved values or use defaults for morning reminder time
-        let hour = UserDefaults.standard.integer(forKey: "morningReminderHour")
-        let minute = UserDefaults.standard.integer(forKey: "morningReminderMinute")
-        
-        // If no saved values, use 9:00 AM as default
-        let defaultHour = hour == 0 ? 9 : hour
-        let defaultMinute = (hour == 0 && minute == 0) ? 0 : minute
-        
-        // Create date with hour and minute
-        var components = DateComponents()
-        components.hour = defaultHour
-        components.minute = defaultMinute
-        self.morningReminderTime = Calendar.current.date(from: components) ?? Date()
-        
-        // Load notification delay (default 2 hours)
-        let delay = UserDefaults.standard.integer(forKey: "notificationDelay")
-        self.notificationDelay = delay == 0 ? 2 : delay
-        
-        // Load daily pill target (default 4)
-        let target = UserDefaults.standard.integer(forKey: "dailyPillTarget")
-        self.dailyPillTarget = target == 0 ? 4 : target
-        
-        // Set default values if needed
-        if delay == 0 {
-            UserDefaults.standard.set(2, forKey: "notificationDelay")
-        }
-        
-        if target == 0 {
-            UserDefaults.standard.set(4, forKey: "dailyPillTarget")
-        }
-    }
-    
-    // Save settings when values change
-    func saveMorningTime() {
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute], from: morningReminderTime)
-        if let hour = components.hour, let minute = components.minute {
-            UserDefaults.standard.set(hour, forKey: "morningReminderHour")
-            UserDefaults.standard.set(minute, forKey: "morningReminderMinute")
-        }
-    }
-    
-    func saveNotificationDelay() {
-        UserDefaults.standard.set(notificationDelay, forKey: "notificationDelay")
-    }
-    
-    func saveDailyPillTarget() {
-        UserDefaults.standard.set(dailyPillTarget, forKey: "dailyPillTarget")
-    }
-}
-
-struct MedicationLog: Identifiable, Codable {
-    let id: UUID
-    let timestamp: Date
-    
-    init(id: UUID = UUID(), timestamp: Date) {
-        self.id = id
-        self.timestamp = timestamp
-    }
-}
+import Foundation
 
 struct ContentView: View {
     @StateObject private var settings = SettingsModel()
@@ -545,14 +478,17 @@ struct ContentView: View {
                 }
                 .sheet(isPresented: $showingHistory) {
                     NavigationView {
-                        HistoryView(medicationLogs: medicationLogs, dailyTarget: settings.dailyPillTarget)
-                            .toolbar {
-                                ToolbarItem(placement: .navigationBarTrailing) {
-                                    Button("Done") {
-                                        showingHistory = false
-                                    }
+                        HistoryView(
+                            medicationLogs: medicationLogs, 
+                            dailyTarget: settings.dailyPillTarget
+                        )
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    showingHistory = false
                                 }
                             }
+                        }
                     }
                 }
             }
