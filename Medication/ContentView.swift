@@ -83,6 +83,7 @@ struct ContentView: View {
     @State private var todayCount: Int = 0
     @State private var showingDatePicker = false
     @State private var showingSettings = false
+    @State private var showingHistory = false
     @State private var selectedDate = Date()
     @State private var notificationsEnabled = false
     @State private var nextPillTime: Date? = nil
@@ -504,6 +505,15 @@ struct ContentView: View {
                 }
                 .listStyle(InsetGroupedListStyle())
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button(action: {
+                            showingHistory = true
+                        }) {
+                            Image(systemName: "calendar")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
                     ToolbarItemGroup(placement: .navigationBarTrailing) {
                         Button(action: {
                             showingSettings = true
@@ -532,6 +542,18 @@ struct ContentView: View {
                                 }
                             }
                         }
+                }
+                .sheet(isPresented: $showingHistory) {
+                    NavigationView {
+                        HistoryView(medicationLogs: medicationLogs, dailyTarget: settings.dailyPillTarget)
+                            .toolbar {
+                                ToolbarItem(placement: .navigationBarTrailing) {
+                                    Button("Done") {
+                                        showingHistory = false
+                                    }
+                                }
+                            }
+                    }
                 }
             }
             .padding()
