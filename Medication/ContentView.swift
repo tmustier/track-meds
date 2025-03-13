@@ -8,6 +8,7 @@
 import SwiftUI
 import UserNotifications
 import Foundation
+import Combine
 
 struct ContentView: View {
     @StateObject private var settings = SettingsModel()
@@ -21,6 +22,7 @@ struct ContentView: View {
     @State private var notificationsEnabled = false
     @State private var nextPillTime: Date? = nil
     @State private var showUndoAlert = false
+    @State private var lastMidnightCheck: Date = UserDefaults.standard.object(forKey: "lastMidnightCheck") as? Date ?? Date()
     
     private var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -43,6 +45,30 @@ struct ContentView: View {
     private func updateTodayCount() {
         let today = Date()
         todayCount = medicationLogs.filter { isSameDay(date1: $0.timestamp, date2: today) }.count
+    }
+    
+    private func checkForDateChange() {
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Check if we've crossed midnight since the last check
+        if !calendar.isDate(lastMidnightCheck, inSameDayAs: now) {
+            // Day has changed, update the count
+            updateTodayCount()
+            updateNextPillTime()
+            
+            if notificationsEnabled {
+                scheduleNotifications()
+            }
+            
+            // Reset the morning notification
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["morningReminder"])
+            scheduleDailyMorningNotification()
+        }
+        
+        // Update the last check time
+        lastMidnightCheck = now
+        UserDefaults.standard.set(now, forKey: "lastMidnightCheck")
     }
     
     private func loadMedicationLogs() {
@@ -299,6 +325,12 @@ struct ContentView: View {
         }
     }
     
+    // Timer for periodically checking date changes (every minute)
+    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
+    
+    // Notification center for app state changes
+    private let notificationCenter = NotificationCenter.default
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -496,6 +528,9 @@ struct ContentView: View {
             .onAppear {
                 loadMedicationLogs()
                 
+                // Check for date change on app appear
+                checkForDateChange()
+                
                 // Check notification status when app appears
                 UNUserNotificationCenter.current().getNotificationSettings { settings in
                     DispatchQueue.main.async {
@@ -508,6 +543,20 @@ struct ContentView: View {
                         }
                     }
                 }
+                
+                // Register for foreground notifications
+                notificationCenter.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main) { _ in
+                    self.checkForDateChange()
+                }
+            }
+            // Check for date change every minute
+            .onReceive(timer) { _ in
+                checkForDateChange()
+            }
+            // Handle system date/time changes
+            .onReceive(notificationCenter.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                // This will trigger when system time changes significantly (like timezone changes, daylight saving, etc.)
+                checkForDateChange()
             }
             .alert("Cannot Undo", isPresented: $showUndoAlert) {
                 Button("OK", role: .cancel) {}
