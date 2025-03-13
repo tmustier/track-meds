@@ -215,6 +215,35 @@ public class InventoryModel: ObservableObject {
         return estimatedDaysRemaining <= settings.inventoryReminderThreshold
     }
     
+    // Calculate days remaining based on initial pill count at last refill
+    public var daysRemainingFromLastRefill: Int {
+        let receivedEvents = refillEvents.filter { $0.eventType == .received }
+            .sorted(by: { $0.timestamp > $1.timestamp })
+        
+        // If no refill events, use current estimate
+        guard let lastRefill = receivedEvents.first,
+              let initialPillCount = lastRefill.pillCount,
+              dailyUsageRate > 0 else {
+            return estimatedDaysRemaining
+        }
+        
+        // Calculate days since last refill
+        let daysSinceLastRefill = Calendar.current.dateComponents(
+            [.day],
+            from: lastRefill.timestamp,
+            to: Date()
+        ).day ?? 0
+        
+        // Calculate total estimated days from last refill
+        let totalDays = Double(initialPillCount) / dailyUsageRate
+        
+        // Calculate days remaining (total days minus days elapsed)
+        let daysRemaining = Int(totalDays) - daysSinceLastRefill
+        
+        // Return the greater of calculated days or 0 (can't have negative days)
+        return max(daysRemaining, 0)
+    }
+    
     // Check if a time-based reminder should be shown
     public func shouldShowTimeReminder(settings: SettingsModel) -> Bool {
         // Don't remind if reminders are disabled
@@ -223,15 +252,8 @@ public class InventoryModel: ObservableObject {
         // Don't remind if we're already waiting for a refill
         if isWaitingForRefill { return false }
         
-        // Get days since last refill
-        let daysSinceLastRefill = Calendar.current.dateComponents(
-            [.day],
-            from: lastRefillDate,
-            to: Date()
-        ).day ?? 0
-        
-        // Check if we're at or past the threshold
-        return daysSinceLastRefill >= settings.timeReminderThreshold
+        // Show reminder when days remaining from last refill is at or below threshold
+        return daysRemainingFromLastRefill <= settings.timeReminderThreshold
     }
     
     // Reset all inventory data (for testing)

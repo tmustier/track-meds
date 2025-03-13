@@ -103,9 +103,17 @@ public struct InventoryView: View {
                                 }
                                 
                                 HStack {
-                                    Text("Estimated days remaining:")
+                                    Text("Current inventory estimate:")
                                     Spacer()
-                                    Text("\(inventory.estimatedDaysRemaining)")
+                                    Text("\(inventory.estimatedDaysRemaining) days")
+                                        .fontWeight(.medium)
+                                        .foregroundColor(pillsRemainingColor)
+                                }
+                                
+                                HStack {
+                                    Text("Based on last refill:")
+                                    Spacer()
+                                    Text("\(inventory.daysRemainingFromLastRefill) days")
                                         .fontWeight(.medium)
                                         .foregroundColor(pillsRemainingColor)
                                 }

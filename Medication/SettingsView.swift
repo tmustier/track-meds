@@ -69,19 +69,28 @@ struct SettingsView: View {
                             Text("Remind when \(settings.inventoryReminderThreshold) day\(settings.inventoryReminderThreshold > 1 ? "s" : "") of pills remain")
                         }
                         
-                        Stepper(value: $settings.timeReminderThreshold, in: 14...90, onEditingChanged: { editing in
+                        Stepper(value: $settings.timeReminderThreshold, in: 7...30, onEditingChanged: { editing in
                             if !editing {
                                 settings.saveRefillReminderSettings()
                             }
                         }) {
-                            Text("Remind after \(settings.timeReminderThreshold) day\(settings.timeReminderThreshold > 1 ? "s" : "") since last refill")
+                            Text("Remind when \(settings.timeReminderThreshold) day\(settings.timeReminderThreshold > 1 ? "s" : "") of pills remain")
                         }
                         
-                        HStack {
-                            Text("Refill reminders will appear when either condition is met.")
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Refill reminders will appear when either condition is met:")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                
+                            Text("• Based on current inventory")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                
+                            Text("• Based on initial pill count at last refill")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        .padding(.top, 2)
                     }
                 }
                 
