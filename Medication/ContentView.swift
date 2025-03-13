@@ -86,6 +86,7 @@ struct ContentView: View {
     @State private var selectedDate = Date()
     @State private var notificationsEnabled = false
     @State private var nextPillTime: Date? = nil
+    @State private var showUndoAlert = false
     
     private var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -174,6 +175,16 @@ struct ContentView: View {
     
     private func undoLastMedication() {
         guard !medicationLogs.isEmpty else { return }
+        
+        // Check if the most recent log was created within the last 5 minutes
+        let now = Date()
+        let timeInterval = now.timeIntervalSince(medicationLogs[0].timestamp)
+        let fiveMinutesInSeconds: TimeInterval = 5 * 60
+        
+        guard timeInterval <= fiveMinutesInSeconds else {
+            showUndoAlert = true
+            return
+        }
         
         // Remove the most recent medication log
         medicationLogs.removeFirst() // removeFirst because they're sorted newest first
@@ -539,6 +550,11 @@ struct ContentView: View {
                         }
                     }
                 }
+            }
+            .alert("Cannot Undo", isPresented: $showUndoAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("You can only undo medication logs that were created within the last 5 minutes.")
             }
             
             // Date picker for adding past medication
