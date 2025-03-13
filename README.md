@@ -1,32 +1,66 @@
 # Medication Tracker
 
-A simple iOS application to track daily medication intake with reminders and logs. Optimized for one medication, taken multiple times every day.
+A comprehensive iOS application for tracking daily medication intake with smart reminders, inventory management, and refill tracking. Optimized for managing one medication taken multiple times daily, with a focus on adherence and ensuring you never run out of medication.
 
-## Features
+## Key Features
 
-- **Simple Medication Tracking**: Log medications with a single tap
-- **Daily Counter**: Track how many pills you've taken today
-- **Next Dose Reminder**: See when your next pill is due
-- **Medication History**: View a log of all medications taken
-- **Retroactive Logging**: Record medications taken earlier
-- **Smart Notifications**: Get reminded at 9 AM daily and 2 hours after your last dose
-- **Inventory Management**:
-  - Track remaining pill count
-  - Monitor estimated days of supply left
-  - Log refill requests and receipts
-- **Refill Reminders**:
-  - Get reminders based on low inventory
-  - Get reminders based on time since last refill
-  - Follow up on pending refill requests
-- **Refill History**: View complete history of refill events
-- **Customizable Settings**:
-  - Set your preferred morning reminder time
-  - Adjust time between doses
-  - Set your daily medication target
-  - Configure refill reminder thresholds
+### Medication Tracking
+- **One-Touch Logging**: Record medication with a single tap
+- **Daily Counter**: Track pills taken today against your daily target
+- **Adherence Monitoring**: Visual indicators show if you're meeting your targets
+- **Retroactive Logging**: Record medications taken earlier with date/time selection
+- **Medication Undo**: Remove accidentally logged doses within 5 minutes
+- **History Timeline**: View complete medication history by day
 
-## Requirements
+### Smart Reminder System
+- **Morning Reminders**: Daily notification at your preferred time
+- **Interval Reminders**: Get notified after a customizable interval since your last dose
+- **Next Dose Indicator**: See exactly when your next pill is due
+- **Persistent Notifications**: Reminders continue throughout the day until all doses are taken
+- **Daily Goal Tracking**: Visual indicators show your progress toward daily target
 
+### Inventory Management
+- **Pill Counter**: Track remaining medication quantity
+- **Usage Calculation**: Automatically calculate daily usage rate based on your target
+- **Supply Estimation**: View days of medication remaining based on:
+  - Current inventory level
+  - Initial pill count at last refill
+- **Depletion Forecasting**: See the exact date when you'll run out
+- **Visual Indicators**: Color-coded warnings when inventory runs low
+
+### Refill Tracking System
+- **Refill Request Logging**: Record when you request a medication refill
+- **Refill Receipt Logging**: Record when you receive your medication
+- **Dual Reminder System**:
+  - **Inventory-based**: Get reminders when your supply runs below a certain threshold 
+  - **Time-based**: Get reminders when you have fewer than X days of pills remaining from your last refill
+- **Intelligent Follow-ups**: Automatic follow-up reminders if refill not received within 3 days
+- **Refill History**: Complete searchable history of all refill events
+
+### Comprehensive Statistics
+- **Adherence Rate**: Percentage of days meeting your target
+- **Star Rating**: Simple visual representation of your adherence
+- **Daily Trends**: View your medication patterns over time
+- **Average Consumption**: Track actual versus target consumption
+- **Supply Management**: Monitor how effectively you're managing refills
+
+### User-Friendly UI/UX
+- **Clean Interface**: Intuitive design focused on essential information
+- **Dark/Light Mode**: Automatic support for system appearance
+- **Accessibility**: Support for VoiceOver and Dynamic Type
+- **Quick Actions**: Common tasks accessible with minimal taps
+- **Interactive Notifications**: Take action directly from notification alerts
+
+## Technical Details
+
+### App Architecture
+- Built with Swift and SwiftUI
+- MVVM architecture for clean separation of concerns
+- Optimized for iOS 15.0 and later
+- Persistent storage with UserDefaults
+- Intelligent notification scheduling with UNUserNotificationCenter
+
+### Requirements
 - iOS 15.0+
 - Xcode 13.0+
 - Swift 5.0+
@@ -37,30 +71,58 @@ A simple iOS application to track daily medication intake with reminders and log
 2. Open the `Medication.xcodeproj` file in Xcode
 3. Build and run the application on your iOS device or simulator
 
-## Usage
+## Usage Guide
 
-- **Tracking Medication**: Tap the "Take Medication" button whenever you take a dose
-- **Past Medication**: Use "Log Past Dose" to record medication taken earlier
-- **Undo**: Use the undo button below "Log Past Dose" to remove the last recorded medication
-- **View History**: Scroll through the list to see all medications taken today and previously
-- **Inventory Management**: Tap the pills icon to:
-  - View your current pill count and estimated supply
-  - Request a medication refill
-  - Log when you receive a refill
-- **Refill History**: View complete history of all refill events with dates and pill counts
-- **Settings**: Access app settings through the gear icon to customize reminders and targets
+### Main Screen
+- **Take Medication**: Tap the large "Take Medication" button whenever you take a dose
+- **Log Past Dose**: Use this option to record medication taken at an earlier time
+- **Undo**: Remove the most recent logged dose (available within 5 minutes)
+- **Daily Status**: View your progress toward daily target at the top of the screen
+- **Today's Log**: See all medications taken today
+- **Previous Logs**: Review your medication history by scrolling down
+
+### History Screen
+- Access by tapping the calendar icon
+- **Summary Statistics**: View adherence percentage, total days tracked, and average consumption
+- **Refill Events**: See your recent medication refill events
+- **Daily Breakdown**: Review each day's medication logs with detailed timestamps
+- **Progress Indicators**: Visual representation of daily adherence
+- **Expandable Details**: Tap to see exact times for each dose
+
+### Inventory Screen
+- Access by tapping the pills icon
+- **Inventory Dashboard**: See current pill count, usage rate, and days remaining
+- **Refill Actions**: Request a refill or log a received refill
+- **Supply Forecasting**: View when you'll run out based on current usage
+- **Refill History**: Review your complete history of refill events
+- **Visual Indicators**: Color-coded warnings when supply is running low
+
+### Settings Screen
+- Access by tapping the gear icon
+- **Notification Settings**: Enable/disable and customize medication reminders
+- **Daily Target**: Set how many pills you need to take each day
+- **Refill Reminders**: Configure when you receive refill reminders:
+  - Set the threshold for inventory-based reminders (days of supply)
+  - Set the threshold for time-based reminders (days remaining)
+- **Reset Options**: Reset all settings to default values if needed
 
 ## Customization
 
-In the Settings screen, you can customize:
+The app offers extensive customization options:
 
-1. **Notifications**: Enable or disable medication reminders
-2. **Morning Reminder Time**: Set when your first daily reminder appears
-3. **Time Between Reminders**: Set how long after taking a pill before you get reminded again
-4. **Daily Target**: Set how many pills you need to take each day
-5. **Refill Reminders**: Configure when you receive refill reminders:
-   - **Inventory-based**: Set how many days of supply triggers a reminder
-   - **Time-based**: Set how many days since last refill triggers a reminder
+1. **Notification Settings**:
+   - Enable/disable all medication reminders
+   - Set your preferred morning reminder time
+   - Adjust interval between follow-up reminders (1-12 hours)
+
+2. **Medication Schedule**:
+   - Set your daily pill target (1-12 pills)
+   - The app will track your progress toward this goal
+
+3. **Refill Reminder Thresholds**:
+   - Inventory-based: Get reminded when 1-30 days of pills remain
+   - Time-based: Get reminded when days remaining from last refill falls below 7-30 days
+   - The app uses whichever threshold is reached first
 
 ## License
 
