@@ -109,7 +109,7 @@ public class RefillReminderManager {
             // Create the reminder
             createReminderNotification(
                 title: "Medication Refill Reminder",
-                body: "It's been \(settings.timeReminderThreshold) days since your last refill.",
+                body: "You have approximately \(inventory.daysRemainingFromLastRefill) days of medication left based on your last refill.",
                 identifier: timeReminderIdentifier,
                 date: reminderDate
             )

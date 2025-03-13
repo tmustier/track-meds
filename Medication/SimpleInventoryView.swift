@@ -40,9 +40,15 @@ public struct SimpleInventoryView: View {
                 }
                 
                 HStack {
-                    Text("Estimated days remaining:")
+                    Text("Current inventory estimate:")
                     Spacer()
-                    Text("\(inventory.estimatedDaysRemaining)")
+                    Text("\(inventory.estimatedDaysRemaining) days")
+                }
+                
+                HStack {
+                    Text("Based on last refill:")
+                    Spacer()
+                    Text("\(inventory.daysRemainingFromLastRefill) days")
                 }
                 
                 HStack {

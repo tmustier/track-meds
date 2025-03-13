@@ -129,18 +129,52 @@ final class InventoryModelTests: XCTestCase {
         XCTAssertFalse(inventory.shouldShowInventoryReminder(settings: settings))
     }
     
-    func testShouldShowTimeReminder() {
-        // Create a refill event 15 days ago
+    func testDaysRemainingFromLastRefill() {
+        // Create a refill event 15 days ago with 30 pills
         let calendar = Calendar.current
         let oldDate = calendar.date(byAdding: .day, value: -15, to: Date())!
         
-        // Given
+        // Given (30 pills at 1.0 daily usage, 15 days ago)
         let refillEvents = [
             RefillEvent(timestamp: oldDate, eventType: .received, pillCount: 30)
         ]
         inventory = InventoryModel(currentPillCount: 15, refillEvents: refillEvents, dailyUsageRate: 1.0)
         
-        // Then - should show reminder (15 days > 14 day threshold)
+        // Then - should have 15 days remaining (30 total - 15 elapsed)
+        XCTAssertEqual(inventory.daysRemainingFromLastRefill, 15)
+        
+        // When - daily usage rate is higher (2.0)
+        inventory.dailyUsageRate = 2.0
+        
+        // Then - should have 0 days remaining (30/2 = 15 total - 15 elapsed)
+        XCTAssertEqual(inventory.daysRemainingFromLastRefill, 0)
+        
+        // When - no refill events
+        inventory = InventoryModel(currentPillCount: 10, refillEvents: [], dailyUsageRate: 1.0)
+        
+        // Then - should fall back to estimatedDaysRemaining
+        XCTAssertEqual(inventory.daysRemainingFromLastRefill, inventory.estimatedDaysRemaining)
+    }
+    
+    func testShouldShowTimeReminder() {
+        // Create a refill event 15 days ago with 30 pills
+        let calendar = Calendar.current
+        let oldDate = calendar.date(byAdding: .day, value: -15, to: Date())!
+        
+        // Given (30 pills at 1.0 daily usage, 15 days ago)
+        let refillEvents = [
+            RefillEvent(timestamp: oldDate, eventType: .received, pillCount: 30)
+        ]
+        inventory = InventoryModel(currentPillCount: 15, refillEvents: refillEvents, dailyUsageRate: 1.0)
+        settings.timeReminderThreshold = 14
+        
+        // Then - should NOT show reminder (15 days remaining > 14 day threshold)
+        XCTAssertFalse(inventory.shouldShowTimeReminder(settings: settings))
+        
+        // When - set the threshold higher
+        settings.timeReminderThreshold = 16
+        
+        // Then - SHOULD show reminder (15 days remaining < 16 day threshold)
         XCTAssertTrue(inventory.shouldShowTimeReminder(settings: settings))
         
         // When - disable reminders
