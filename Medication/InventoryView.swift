@@ -343,8 +343,12 @@ struct RefillReceivedView: View {
 }
 
 // Full history view
-struct RefillHistoryView: View {
-    let refillEvents: [RefillEvent]
+public struct RefillHistoryView: View {
+    public let refillEvents: [RefillEvent]
+    
+    public init(refillEvents: [RefillEvent]) {
+        self.refillEvents = refillEvents
+    }
     
     // Date formatters
     private var dateFormatter: DateFormatter = {
